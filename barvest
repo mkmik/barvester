@@ -55,5 +55,5 @@ while true; do
 	echo "sleeping $DELAY"
 	sleep $DELAY
 done
-
+echo "done"
 echo "Fetched $COUNT pages"
