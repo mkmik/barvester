@@ -5,7 +5,7 @@
 BASE=http://zaguan.unizar.es/oai2d
 MDFORMAT=oai_dc
 SET=
-DELAY=10
+DELAY=8
 
 ###############################
 
@@ -18,18 +18,42 @@ listRecordsCommand() {
  fi
 }
 
+parseResumptionToken() {
+  grep resumptionToken | sed 's/.*>\(.*\)<.*/\1/'
+}
+
+download() {
+  PARAMS=$1
+  ERR=1
+  #echo  >&2 "wget -q -O- $1"
+  while true; do
+	  wget -q -t 10 -O/tmp/barvest.tmp $PARAMS
+	  ERR=$?
+
+	  cat /tmp/barvest.tmp >>/tmp/barvest.dump
+	  if [ "$ERR" == "0" ]; then
+		  break
+	  fi
+
+	  echo >&2 "got error from wget, retrying"
+	  sleep 5
+  done
+  cat  /tmp/barvest.tmp
+}
+
 COUNT=0
 TOKEN=""
 while true; do
 	echo "fetching token: $TOKEN"
-	TOKEN=$(wget -q -O- $(listRecordsCommand $TOKEN) | grep resumptionToken | sed 's/.*>\(.*\)<.*/\1/')
-	echo "sleeping $DELAY"
-	sleep $DELAY
+	TOKEN=$(download $(listRecordsCommand $TOKEN) | parseResumptionToken)
 	if [ -z "$TOKEN" ]; then
 		echo "no more pages"
 		break
 	fi
 	COUNT=$((COUNT + 1))
+
+	echo "sleeping $DELAY"
+	sleep $DELAY
 done
 
 echo "Fetched $COUNT pages"
