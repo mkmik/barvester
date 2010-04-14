@@ -1,0 +1,29 @@
+#!/bin/sh
+
+#BASE=http://oai.driver.research-infrastructures.eu/
+#BASE=http://node1.integration.driver.research-infrastructures.eu:8280/is/mvc/oai/oai.do
+BASE=http://zaguan.unizar.es/oai2d
+MDFORMAT=oai_dc
+SET=
+
+###############################
+
+listRecordsCommand() {
+ TOKEN=$1
+ if [ -z "$TOKEN" ]; then
+	 echo "$BASE?verb=ListRecords&metadataPrefix=$MDFORMAT"
+ else
+	 echo "$BASE?verb=ListRecords&resumptionToken=$TOKEN"
+ fi
+}
+
+TOKEN=""
+while true; do
+	TOKEN=$(wget -q -O- $(listRecordsCommand $TOKEN) | grep resumptionToken | sed 's/.*>\(.*\)<.*/\1/')
+	echo "next token: $TOKEN"
+	sleep 10
+	if [ -z "$TOKEN" ]; then
+		echo "no more pages"
+		break
+	fi
+done
