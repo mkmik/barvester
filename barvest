@@ -3,9 +3,11 @@
 #BASE=http://oai.driver.research-infrastructures.eu/
 #BASE=http://node1.integration.driver.research-infrastructures.eu:8280/is/mvc/oai/oai.do
 BASE=http://zaguan.unizar.es/oai2d
+#BASE=http://rua.ua.es/dspace-oai/request
 MDFORMAT=oai_dc
 SET=
 DELAY=8
+VERBOSE=0
 
 ###############################
 
@@ -19,18 +21,25 @@ listRecordsCommand() {
 }
 
 parseResumptionToken() {
-  grep resumptionToken | sed 's/.*>\(.*\)<.*/\1/'
+  grep '<resumptionToken' | sed 's/.*<resumptionToken[^>]*>\([^<]*\).*>/\1/'
 }
+
+COUNT=0
 
 download() {
   PARAMS=$1
   ERR=1
-  #echo  >&2 "wget -q -O- $1"
+
+  FILE=/tmp/barvest.tmp.$COUNT
+
+  if [ "$VERBOSE" == "1" ]; then
+	  echo  >&2 "wget -q -O- $1"
+  fi
   while true; do
-	  wget -q -t 10 -O/tmp/barvest.tmp $PARAMS
+	  wget -q -t 1 -O$FILE $PARAMS
 	  ERR=$?
 
-	  cat /tmp/barvest.tmp >>/tmp/barvest.dump
+	  cat $FILE >>/tmp/barvest.dump
 	  if [ "$ERR" == "0" ]; then
 		  break
 	  fi
@@ -38,10 +47,9 @@ download() {
 	  echo >&2 "got error from wget, retrying"
 	  sleep 5
   done
-  cat  /tmp/barvest.tmp
+  cat $FILE
 }
 
-COUNT=0
 TOKEN=""
 while true; do
 	echo "fetching token: $TOKEN"
